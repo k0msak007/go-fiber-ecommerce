@@ -32,8 +32,8 @@ vendor
 /assets
  
 # Customs
-*.env*
-.air*
+# *.env*
+# .air*
 /tmp
 *.pem
 apikey.txt
