@@ -6,10 +6,14 @@ import (
 	"github.com/k0msak007/go-fiber-ecommerce/module/middlewares/middlewaresRepositories"
 	"github.com/k0msak007/go-fiber-ecommerce/module/middlewares/middlewaresUsecases"
 	"github.com/k0msak007/go-fiber-ecommerce/module/monitor/monitorHandlers"
+	"github.com/k0msak007/go-fiber-ecommerce/module/users/usersHandlers"
+	"github.com/k0msak007/go-fiber-ecommerce/module/users/usersRepositories"
+	"github.com/k0msak007/go-fiber-ecommerce/module/users/usersUsecases"
 )
 
 type IModuleFactory interface {
 	MonitorModule()
+	UsersModule()
 }
 
 type moduleFactory struct {
@@ -37,4 +41,17 @@ func (m *moduleFactory) MonitorModule() {
 	handler := monitorHandlers.MonitorHandler(m.s.cfg)
 
 	m.r.Get("/", handler.HealthCheck)
+}
+
+func (m *moduleFactory) UsersModule() {
+	repository := usersRepositories.UsersRepository(m.s.db)
+	usecase := usersUsecases.UsersUsecase(m.s.cfg, repository)
+	handler := usersHandlers.UsersHandler(m.s.cfg, usecase)
+
+	router := m.r.Group("/users")
+
+	router.Post("/signup", handler.SignUpCustomer)
+	router.Post("/signin", handler.SignIn)
+	router.Post("/refresh", handler.RefreshPassport)
+	router.Post("/signout", handler.SignOut)
 }
