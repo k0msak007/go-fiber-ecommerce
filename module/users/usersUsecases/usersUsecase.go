@@ -15,6 +15,8 @@ type IUsersUsecase interface {
 	GetPassPort(req *users.UserCredential) (*users.UserPassPort, error)
 	RefreshPassport(req *users.UserRefreshCredential) (*users.UserPassPort, error)
 	DeleteOauth(oauthId string) error
+	InsertAdmin(req *users.UserRegisterReq) (*users.UserPassPort, error)
+	GetUserProfile(userId string) (*users.User, error)
 }
 
 type usersUsecase struct {
@@ -35,6 +37,18 @@ func (u *usersUsecase) InsertCustomer(req *users.UserRegisterReq) (*users.UserPa
 	}
 
 	result, err := u.usersRepository.InsertUser(req, false)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (u *usersUsecase) InsertAdmin(req *users.UserRegisterReq) (*users.UserPassPort, error) {
+	if err := req.BcryptHashing(); err != nil {
+		return nil, err
+	}
+
+	result, err := u.usersRepository.InsertUser(req, true)
 	if err != nil {
 		return nil, err
 	}
@@ -129,9 +143,9 @@ func (u *usersUsecase) RefreshPassport(req *users.UserRefreshCredential) (*users
 }
 
 func (u *usersUsecase) DeleteOauth(oauthId string) error {
-	if err := u.usersRepository.DeleteOauth(oauthId); err != nil {
-		return err
-	}
+	return u.usersRepository.DeleteOauth(oauthId)
+}
 
-	return nil
+func (u *usersUsecase) GetUserProfile(userId string) (*users.User, error) {
+	return u.usersRepository.GetProfile(userId)
 }

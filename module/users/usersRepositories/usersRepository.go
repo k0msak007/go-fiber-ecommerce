@@ -146,8 +146,7 @@ func (r *usersRepository) DeleteOauth(oauthId string) error {
 	query := `DELETE FROM "oauth" WHERE "id" = $1;`
 
 	if _, err := r.db.ExecContext(context.Background(), query, oauthId); err != nil {
-		return fmt.Errorf("oauth not found", err)
+		return fmt.Errorf("oauth not found")
 	}
-
 	return nil
 }
