@@ -5,10 +5,15 @@ import (
 	"github.com/k0msak007/go-fiber-ecommerce/module/appinfo/appinfoHandlers"
 	"github.com/k0msak007/go-fiber-ecommerce/module/appinfo/appinfoRepositories"
 	"github.com/k0msak007/go-fiber-ecommerce/module/appinfo/appinfoUsecases"
+	"github.com/k0msak007/go-fiber-ecommerce/module/files/filesHandlers"
+	"github.com/k0msak007/go-fiber-ecommerce/module/files/filesUsecases"
 	"github.com/k0msak007/go-fiber-ecommerce/module/middlewares/middlewaresHandlers"
 	"github.com/k0msak007/go-fiber-ecommerce/module/middlewares/middlewaresRepositories"
 	"github.com/k0msak007/go-fiber-ecommerce/module/middlewares/middlewaresUsecases"
 	"github.com/k0msak007/go-fiber-ecommerce/module/monitor/monitorHandlers"
+	"github.com/k0msak007/go-fiber-ecommerce/module/products/productsHandlers"
+	"github.com/k0msak007/go-fiber-ecommerce/module/products/productsRepositories"
+	"github.com/k0msak007/go-fiber-ecommerce/module/products/productsUsecases"
 	"github.com/k0msak007/go-fiber-ecommerce/module/users/usersHandlers"
 	"github.com/k0msak007/go-fiber-ecommerce/module/users/usersRepositories"
 	"github.com/k0msak007/go-fiber-ecommerce/module/users/usersUsecases"
@@ -18,6 +23,8 @@ type IModuleFactory interface {
 	MonitorModule()
 	UsersModule()
 	AppinfoModule()
+	FilesModule()
+	ProductsModule()
 }
 
 type moduleFactory struct {
@@ -77,4 +84,33 @@ func (m *moduleFactory) AppinfoModule() {
 	router.Get("/apiKey", m.mid.JwtAuth(), m.mid.Authorize(2), handler.GenerateApiKey)
 
 	router.Delete("/:category_id/categories", m.mid.JwtAuth(), m.mid.Authorize(2), handler.RemoveCategory)
+}
+
+func (m *moduleFactory) FilesModule() {
+	usecase := filesUsecases.FilesUsecase(m.s.cfg)
+	handler := filesHandlers.FilesHandler(m.s.cfg, usecase)
+
+	router := m.r.Group("/files")
+
+	router.Post("/upload", m.mid.JwtAuth(), m.mid.Authorize(2), handler.UploadFile)
+	router.Patch("/delete", m.mid.JwtAuth(), m.mid.Authorize(2), handler.DeleteFile)
+}
+
+func (m *moduleFactory) ProductsModule() {
+	filesUsecase := filesUsecases.FilesUsecase(m.s.cfg)
+
+	repository := productsRepositories.ProductsRepository(m.s.db, m.s.cfg, filesUsecase)
+	usecase := productsUsecases.ProductsUsecase(repository)
+	handler := productsHandlers.ProductsHandler(m.s.cfg, usecase, filesUsecase)
+
+	router := m.r.Group("/products")
+
+	router.Post("/", m.mid.JwtAuth(), m.mid.Authorize(2), handler.AddProduct)
+
+	router.Patch("/:product_id", m.mid.JwtAuth(), m.mid.Authorize(2), handler.UpdateProduct)
+
+	router.Get("/", m.mid.ApiKeyAuth(), handler.FindProduct)
+	router.Get("/:product_id", m.mid.ApiKeyAuth(), handler.FindOneProduct)
+
+	router.Delete("/:product_id", m.mid.JwtAuth(), m.mid.Authorize(2), handler.DeleteProduct)
 }
