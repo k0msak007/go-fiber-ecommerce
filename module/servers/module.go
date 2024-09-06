@@ -11,6 +11,9 @@ import (
 	"github.com/k0msak007/go-fiber-ecommerce/module/middlewares/middlewaresRepositories"
 	"github.com/k0msak007/go-fiber-ecommerce/module/middlewares/middlewaresUsecases"
 	"github.com/k0msak007/go-fiber-ecommerce/module/monitor/monitorHandlers"
+	"github.com/k0msak007/go-fiber-ecommerce/module/orders/ordersHandlers"
+	"github.com/k0msak007/go-fiber-ecommerce/module/orders/ordersRepositories"
+	"github.com/k0msak007/go-fiber-ecommerce/module/orders/ordersUsecases"
 	"github.com/k0msak007/go-fiber-ecommerce/module/products/productsHandlers"
 	"github.com/k0msak007/go-fiber-ecommerce/module/products/productsRepositories"
 	"github.com/k0msak007/go-fiber-ecommerce/module/products/productsUsecases"
@@ -25,6 +28,7 @@ type IModuleFactory interface {
 	AppinfoModule()
 	FilesModule()
 	ProductsModule()
+	OrdersModule()
 }
 
 type moduleFactory struct {
@@ -113,4 +117,21 @@ func (m *moduleFactory) ProductsModule() {
 	router.Get("/:product_id", m.mid.ApiKeyAuth(), handler.FindOneProduct)
 
 	router.Delete("/:product_id", m.mid.JwtAuth(), m.mid.Authorize(2), handler.DeleteProduct)
+}
+
+func (m *moduleFactory) OrdersModule() {
+	filesUsecase := filesUsecases.FilesUsecase(m.s.cfg)
+	productsRepository := productsRepositories.ProductsRepository(m.s.db, m.s.cfg, filesUsecase)
+
+	ordersRepository := ordersRepositories.OrdersRepository(m.s.db)
+	ordersUsecase := ordersUsecases.OrdersUsecase(ordersRepository, productsRepository)
+	ordersHandler := ordersHandlers.OrdersHandler(m.s.cfg, ordersUsecase)
+
+	router := m.r.Group("/orders")
+
+	router.Post("/", m.mid.JwtAuth(), ordersHandler.InsertOrder)
+
+	router.Get("/", m.mid.JwtAuth(), m.mid.Authorize(2), ordersHandler.FindOrder)
+	router.Get("/:order_id", m.mid.JwtAuth(), m.mid.ParamsCheck(), ordersHandler.FindOneOrder)
+	router.Patch("/:user_id/:order_id", m.mid.JwtAuth(), m.mid.ParamsCheck(), ordersHandler.UpdateOrder)
 }

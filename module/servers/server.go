@@ -13,6 +13,7 @@ import (
 
 type IServer interface {
 	Start()
+	GetServer() *server
 }
 
 type server struct {
@@ -51,6 +52,7 @@ func (s *server) Start() {
 	modules.AppinfoModule()
 	modules.FilesModule()
 	modules.ProductsModule()
+	modules.OrdersModule()
 
 	s.app.Use(middlewares.RouterCheck())
 
@@ -66,4 +68,8 @@ func (s *server) Start() {
 	// Listen and Server in host:port
 	log.Printf("fiber server is starting on %s", s.cfg.App().Url())
 	s.app.Listen(s.cfg.App().Url())
+}
+
+func (s *server) GetServer() *server {
+	return s
 }
